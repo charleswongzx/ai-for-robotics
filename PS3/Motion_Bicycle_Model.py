@@ -66,7 +66,6 @@ class robot:
     #
 
     def set(self, new_x, new_y, new_orientation):
-        # type: (object, object, object) -> object
 
         if new_orientation < 0 or new_orientation >= 2 * pi:
             raise ValueError, 'Orientation must be in [0..2pi]'
@@ -95,35 +94,36 @@ class robot:
     #
 
     def move(self, motion): # Do not change the name of this function
+
+        new_robot = robot(self.length)
+        new_robot.set(self.x,self.y,self.orientation)
+        new_robot.set_noise(self.bearing_noise,self.steering_noise,self.distance_noise)
+
         distance = motion[1]
         steering_angle = motion[0]
 
-        newRobot = robot()
-        newRobot.length = self.length
-        # print distance
-        # print steering_angle
-        beta = (distance/self.length)*tan(steering_angle)
-        # print 'beta:  ', beta
-        # print 'orien:  ',self.orientation
+        turning_angle = (distance/new_robot.length)*tan(steering_angle)
 
-        if(abs(beta) < 0.001):
-            newX = self.x+distance*cos(self.orientation)
-            newY = self.y-distance*sin(self.orientation)
-            newOrient = (self.orientation+beta)%(2*pi)
+        if turning_angle >= 0.001:
+            turning_radius = distance/turning_angle
+
+            center_x = new_robot.x - sin(new_robot.orientation)*turning_radius
+            center_y = new_robot.y + cos(new_robot.orientation)*turning_radius
+
+            new_x = center_x+sin(new_robot.orientation+turning_angle)*turning_radius
+            new_y = center_y-cos(new_robot.orientation+turning_angle)*turning_radius
+            new_orien = (new_robot.orientation+turning_angle)%(2*pi)
 
         else:
-            R = steering_angle/beta
-            centerX = self.x - (sin(self.orientation)*R)
-            centerY = self.y + (cos(self.orientation)*R)
-            newX = centerX + (sin(self.orientation+beta)*R)
-            newY = centerY - (cos(self.orientation+beta)*R)
-            newOrient = (self.orientation+beta)%(2*pi)
-            # print 'neworien:   ',newOrient
+            new_x = new_robot.x + distance*cos(new_robot.orientation)
+            new_y = new_robot.y + distance*sin(new_robot.orientation)
+            new_orien = (new_robot.orientation+turning_angle)%(2*pi)
 
-        newRobot.set(newX,newY,newOrient)
+        new_robot.set(new_x,new_y,new_orien)
 
+        result = new_robot
 
-        return newRobot # make sure your move function returns an instance
+        return result # make sure your move function returns an instance
                       # of the robot class with the correct coordinates.
 
     ############## ONLY ADD/MODIFY CODE ABOVE HERE ####################
@@ -143,7 +143,7 @@ class robot:
 ##       Robot:     [x=19.861 y=1.4333 orient=0.2886]
 ##       Robot:     [x=39.034 y=7.1270 orient=0.2886]
 ##
-
+##
 length = 20.
 bearing_noise  = 0.0
 steering_noise = 0.0
@@ -159,8 +159,8 @@ T = len(motions)
 
 print 'Robot:    ', myrobot
 for t in range(T):
-    myrobot = myrobot.move(motions[t])
-    print 'Robot:    ', myrobot
+   myrobot = myrobot.move(motions[t])
+   print 'Robot:    ', myrobot
 
 
 
